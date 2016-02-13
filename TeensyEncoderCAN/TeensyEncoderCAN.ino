@@ -2,7 +2,7 @@
 #include <TeensyCANBase.h>
 
 Encoder encoder(5, 6);
-TeensyCANBase can(0x610);
+TeensyCANBase can(0x602);
 
 void setup(void){
   can.begin();
