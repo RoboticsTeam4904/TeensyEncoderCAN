@@ -2,12 +2,13 @@
 #include <TeensyCANBase.h>
 
 Encoder encoder(5, 6);
-TeensyCANBase can(0x602);
-int buttonPin = 9;
+TeensyCANBase can(0x605);
+int buttonPin = 7;
 
 void setup(void){
   can.begin();
-  pinMode(buttonPin, INPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
+  digitalWrite(buttonPin, HIGH);
   delay(1000);
   Serial.println("Teensy 3.X CAN Encoder");
 }
@@ -61,15 +62,16 @@ void loop(void){
     delete data;
   }
 
-  if(digitalRead(buttonPin) == HIGH){
+  if(digitalRead(buttonPin) == LOW){
     encoder.write(0);
+    Serial.println("rst");
   }
 
   long newPos = encoder.read();
   if(newPos != pos){
     rate = ((double) 1000000.0 * (newPos - pos)) / ((double) (micros() - lastRead));
     pos = newPos;
-    //Serial.println(pos);
+   // Serial.println(pos);
     lastRead = micros();
   }
   else{
