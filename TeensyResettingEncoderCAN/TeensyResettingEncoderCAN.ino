@@ -1,12 +1,13 @@
 #include <Encoder.h>
+#include <FlexCAN.h>
 #include <TeensyCANBase.h>
 
 Encoder encoder(5, 6);
-TeensyCANBase can(0x602);
+TeensyCANBase encoderCAN(0x610, &sendEncoder);
 int buttonPin = 9;
 
 void setup(void){
-  can.begin();
+	TeensyCANBase::begin();
   pinMode(buttonPin, INPUT);
   delay(1000);
   Serial.println("Teensy 3.X CAN Encoder");
@@ -16,50 +17,47 @@ long lastRead = 0;
 long pos = -999;
 long rate = 0;
 
+int sendEncoder(byte* msg, byte* resp) {\
+	if (msg[0] == 0) {
+		resp[0] = pos & 0xff;
+		resp[1] = (pos >> 8) & 0xff;
+		resp[2] = (pos >> 16) & 0xff;
+		resp[3] = (pos >> 24) & 0xff;\
+
+		resp[4] = 0; // Mode
+
+		for (int i = 5; i < 8; i++) {
+			resp[i] = 0;
+		}
+
+		return 0;
+	}
+	else if (msg[0] == 1) {
+		resp[0] = rate & 0xff;
+		resp[1] = (rate >> 8) & 0xff;
+		resp[2] = (rate >> 16) & 0xff;
+		resp[3] = (rate >> 24) & 0xff;\
+
+		resp[4] = 1; // Mode
+
+		for (int i = 5; i < 8; i++) {
+			resp[i] = 0;
+		}
+
+		return 0;
+	}
+	else if (msg[0] == 0x72 && msg[1] == 0x65 && msg[2] == 0x73 && msg[3] == 0x65 && msg[4] == 0x74 && msg[5] == 0x65 && msg[6] == 0x6e && msg[7] == 0x63) {
+		encoder.write(0);
+		pos = 0;
+		rate = 0;
+		Serial.println("reset");
+		return 1;
+	}
+	return 1;
+}
+
 void loop(void){
-  if(can.available() > 0){
-    uint8_t * data = (uint8_t *) malloc(8);
-    if(can.read(data) == 0) {
-      Serial.print(data[0]);
-      Serial.print("\t");
-      if(data[0] == 0){
-        data[0] = pos & 0xff;
-        data[1] = (pos >> 8) & 0xff;
-        data[2] = (pos >> 16) & 0xff;
-        data[3] = (pos >> 24) & 0xff;
-        Serial.print(pos);
-        Serial.print("\t");
-        Serial.println(data[2]);
-
-        data[4] = 0; // Mode
-
-        for(int i = 5; i < 8; i++){
-          data[i] = 0;
-        }
-      }
-      else if(data[0] == 1){
-        data[0] = rate & 0xff;
-        data[1] = (rate >> 8) & 0xff;
-        data[2] = (rate >> 16) & 0xff;
-        data[3] = (rate >> 24) & 0xff;
-        Serial.println(rate);
-        
-        data[4] = 1; // Mode
-        
-        for(int i = 5; i < 8; i++){
-          data[i] = 0;
-        }
-      }
-      else if(data[0] == 0x72 && data[1] == 0x65 && data[2] == 0x73 && data[3] == 0x65 && data[4] == 0x74 && data[5] == 0x65 && data[6] == 0x6e && data[7] == 0x63){
-        encoder.write(0);
-        pos = 0;
-        rate = 0;
-        Serial.println("reset");
-      }
-      can.write(data);
-    }
-    delete data;
-  }
+	TeensyCANBase::update();
 
   if(digitalRead(buttonPin) == HIGH){
     encoder.write(0);
