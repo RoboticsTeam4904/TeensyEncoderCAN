@@ -31,8 +31,6 @@ void loop(void){
     data[2] = (pos >> 16) & 0xff;
     data[3] = (pos >> 24) & 0xff;
     Serial.print(pos);
-    Serial.print("\t");
-    Serial.println(data[2]);
 
     data[4] = rate & 0xff;
     data[5] = (rate >> 8) & 0xff;
